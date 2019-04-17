@@ -32,22 +32,10 @@ var mutex = &sync.Mutex{}
 func Launch() {
 	//log errors
 	err := godotenv.Load()
+
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	//
-	// go func() {
-	// 	t := time.Now()
-	// 	genesisBlock := block.Block{}
-	// 	transaction := block.Transaction{}
-	// 	genesisBlock = block.Block{0, t.String(), transaction, calculateHash(genesisBlock), ""}
-	// 	spew.Dump(genesisBlock)
-
-	// 	mutex.Lock()
-	// 	Blockchain = append(Blockchain, genesisBlock)
-	// 	mutex.Unlock()
-	// }()
 
 	go createFirstBlock()
 
@@ -87,7 +75,7 @@ func createFirstBlock() {
 	mutex.Unlock()
 }
 
-// create web handlers
+// create http handlers
 func makeMuxRouter() http.Handler {
 	router := mux.NewRouter()
 	router.HandleFunc("/", requestGetBlockchain).Methods("GET")
@@ -136,6 +124,7 @@ func handleWriteBlock(writter http.ResponseWriter, request *http.Request) {
 
 }
 
+// respond with JSON
 func respondWithJSON(writter http.ResponseWriter, request *http.Request, code int, payload interface{}) {
 	response, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
