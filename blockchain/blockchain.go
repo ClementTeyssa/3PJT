@@ -8,17 +8,12 @@ import (
 
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
-	"io"
 	"log"
-	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -39,27 +34,7 @@ func Launch() {
 
 	go createFirstBlock()
 
-	log.Fatal(run())
-}
-
-// web server
-func run() error {
-	mux := makeMuxRouter()
-	httpPort := os.Getenv("PORT")
-	log.Println("HTTP Server Listening on port :", httpPort)
-	s := &http.Server{
-		Addr:           ":" + httpPort,
-		Handler:        mux,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-	}
-
-	if err := s.ListenAndServe(); err != nil {
-		return err
-	}
-
-	return nil
+	//log.Fatal(run())
 }
 
 // create firstblock
@@ -73,68 +48,6 @@ func createFirstBlock() {
 	mutex.Lock()
 	Blockchain = append(Blockchain, genesisBlock)
 	mutex.Unlock()
-}
-
-// create http handlers
-func makeMuxRouter() http.Handler {
-	router := mux.NewRouter()
-	router.HandleFunc("/", requestGetBlockchain).Methods("GET")
-	router.HandleFunc("/", handleWriteBlock).Methods("POST")
-	return router
-}
-
-// write blockchain when we receive an http request
-func requestGetBlockchain(writter http.ResponseWriter, request *http.Request) {
-	bytes, err := json.MarshalIndent(Blockchain, "", " ")
-
-	if err != nil {
-		http.Error(writter, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	io.WriteString(writter, string(bytes))
-}
-
-// read a new transaction
-func handleWriteBlock(writter http.ResponseWriter, request *http.Request) {
-	writter.Header().Set("Content-Type", "application/json")
-	var transaction block.Transaction
-
-	decoder := json.NewDecoder(request.Body)
-
-	err := decoder.Decode(&transaction)
-	if err != nil {
-		respondWithJSON(writter, request, http.StatusBadRequest, request.Body)
-		return
-	}
-
-	defer request.Body.Close()
-
-	mutex.Lock()
-	prevBlock := Blockchain[len(Blockchain)-1]
-	newBlock := generateBlock(prevBlock, transaction.AccountFrom, transaction.AccountTo, transaction.Amount)
-
-	if isBlockValid(newBlock, prevBlock) {
-		Blockchain = append(Blockchain, newBlock)
-		spew.Dump(Blockchain)
-	}
-	mutex.Unlock()
-
-	respondWithJSON(writter, request, http.StatusCreated, newBlock)
-
-}
-
-// respond with JSON
-func respondWithJSON(writter http.ResponseWriter, request *http.Request, code int, payload interface{}) {
-	response, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		writter.WriteHeader(http.StatusInternalServerError)
-		writter.Write([]byte("HTTP 500: Internal Server Error"))
-		return
-	} else {
-		writter.WriteHeader(code)
-		writter.Write(response)
-	}
 }
 
 // verify if new block is valid
