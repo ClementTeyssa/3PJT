@@ -2,57 +2,26 @@ package blockchain
 
 //Do imports
 import (
-	"fmt"
-
-	"./block"
-
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
+	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/joho/godotenv"
+	defs "../defs"
 )
 
-// Blockchain is an array of Blocks
-var Blockchain []block.Block
-
-var mutex = &sync.Mutex{}
-
-//TODO: faire en sorte de ne pas avoir à avoir le .env dans le dossier courrant
-//(récupérer tout ça dans le package main) et mettre en variables
-func Launch() {
-	//log errors
-	err := godotenv.Load()
-
-	if err != nil {
-		log.Fatal(err)
+// verify if new block is valid
+func IsBlockValid(newBlock, oldBlock defs.Block) bool {
+	if oldBlock.Index+1 != newBlock.Index {
+		return false
 	}
 
-	go createFirstBlock()
+	if oldBlock.Hash != newBlock.PrevHash {
+		return false
+	}
 
-	//log.Fatal(run())
-}
-
-// create firstblock
-func createFirstBlock() {
-	t := time.Now()
-	genesisBlock := block.Block{}
-	transaction := block.Transaction{}
-	genesisBlock = block.Block{0, t.String(), transaction, calculateHash(genesisBlock), ""}
-	spew.Dump(genesisBlock)
-
-	mutex.Lock()
-	Blockchain = append(Blockchain, genesisBlock)
-	mutex.Unlock()
-}
-
-// verify if new block is valid
-func isBlockValid(newBlock, oldBlock block.Block) bool {
-	if oldBlock.Index+1 != newBlock.Index || oldBlock.Hash != newBlock.PrevHash || calculateHash(newBlock) != newBlock.Hash {
+	if CalculateHash(newBlock) != newBlock.Hash {
 		return false
 	}
 
@@ -60,7 +29,7 @@ func isBlockValid(newBlock, oldBlock block.Block) bool {
 }
 
 // calculate SHA256 hash
-func calculateHash(block block.Block) string {
+func CalculateHash(block defs.Block) string {
 	record := strconv.Itoa(block.Index) + block.Timestamp + block.Transaction.AccountFrom + block.Transaction.AccountTo + fmt.Sprintf("%.2f", block.Transaction.Amount) + block.PrevHash
 	h := sha256.New()
 	h.Write([]byte(record))
@@ -69,22 +38,21 @@ func calculateHash(block block.Block) string {
 }
 
 // create a new block using previous block's hash
-func generateBlock(prevBlock block.Block, accountFrom string, accountTo string, amount float32) block.Block {
+func GenerateBlock(oldBlock defs.Block, accountFrom string, accountTo string, amount float32) defs.Block {
 
-	var newBlock block.Block
+	var newBlock defs.Block
 
 	t := time.Now()
 
-	newBlock.Index = prevBlock.Index + 1
+	newBlock.Index = oldBlock.Index + 1
 	newBlock.Timestamp = t.String()
 
-	var transaction block.Transaction
-	transaction.AccountFrom = accountFrom
+	var transaction defs.Transaction
 	transaction.AccountTo = accountTo
 	transaction.Amount = amount
 	newBlock.Transaction = transaction
-	newBlock.PrevHash = prevBlock.Hash
-	newBlock.Hash = calculateHash(newBlock)
+	newBlock.PrevHash = oldBlock.Hash
+	newBlock.Hash = CalculateHash(newBlock)
 
 	return newBlock
 }

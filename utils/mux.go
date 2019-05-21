@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"../blockchain"
-
 	"encoding/json"
 	"io"
 	"log"
@@ -12,21 +10,25 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
+
+	blockchain "../blockchain"
+	defs "../defs"
 )
 
 // create http handlers
 func makeMuxRouter() http.Handler {
 	router := mux.NewRouter()
-	router.HandleFunc("/", requestGetBlockchain).Methods("GET")
+	router.HandleFunc("/", handleGetBlockchain).Methods("GET")
 	router.HandleFunc("/", handleWriteBlock).Methods("POST")
+	router.HandleFunc("/connect", handleConnect).Methods("POST")
 	return router
 }
 
 // web server
-func muxServer() error {
+func MuxServer() error {
 	mux := makeMuxRouter()
 	httpPort := os.Getenv("PORT")
-	log.Println("HTTP Server Listening on port :", httpPort)
+	log.Println("HTTP Server Listening on port :", peerProfile.PeerPort) // peerProfile.PeerPort in peer-manager.go
 	s := &http.Server{
 		Addr:           ":" + httpPort,
 		Handler:        mux,
@@ -44,48 +46,46 @@ func muxServer() error {
 
 // write blockchain when we receive an http request
 func handleGetBlockchain(writter http.ResponseWriter, request *http.Request) {
-	bytes, err := json.MarshalIndent(Blockchain, "", " ")
+	defs.Mutex.Lock()
+	bytes, err := json.MarshalIndent(defs.Blockchain, "", " ")
 
 	if err != nil {
 		http.Error(writter, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	defs.Mutex.Unlock()
 	io.WriteString(writter, string(bytes))
 }
 
 // read a new transaction
-func handleWriteBlock(writter http.ResponseWriter, request *http.Request) {
-	writter.Header().Set("Content-Type", "application/json")
-	var transaction block.Transaction
+func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var m defs.Message
 
-	decoder := json.NewDecoder(request.Body)
-
-	err := decoder.Decode(&transaction)
-	if err != nil {
-		respondWithJSON(writter, request, http.StatusBadRequest, request.Body)
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&m); err != nil {
+		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
 		return
 	}
+	defer r.Body.Close()
 
-	defer request.Body.Close()
+	defs.Mutex.Lock()
+	newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], "", "", 0)
+	defs.Mutex.Unlock()
 
-	mutex.Lock()
-	prevBlock := Blockchain[len(Blockchain)-1]
-	newBlock := generateBlock(prevBlock, transaction.AccountFrom, transaction.AccountTo, transaction.Amount)
-
-	if isBlockValid(newBlock, prevBlock) {
-		Blockchain = append(Blockchain, newBlock)
-		spew.Dump(Blockchain)
+	if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
+		defs.Mutex.Lock()
+		defs.Blockchain = append(defs.Blockchain, newBlock)
+		defs.Mutex.Unlock()
+		spew.Dump(defs.Blockchain)
 	}
 
-	mutex.Unlock()
-
-	respondWithJSON(writter, request, http.StatusCreated, newBlock)
+	respondWithJSON(w, r, http.StatusCreated, newBlock)
 }
 
 func handleConnect(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var m newTarget_json
+	var m defs.NewTargetJson
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&m); err != nil {
