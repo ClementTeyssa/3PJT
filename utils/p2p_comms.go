@@ -11,8 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"../blockchain"
-
+	blockchain "../blockchain"
 	defs "../defs"
 	"github.com/davecgh/go-spew/spew"
 	net "github.com/libp2p/go-libp2p-net"
@@ -21,6 +20,7 @@ import (
 func handleStream(s net.Stream) {
 
 	log.Println("Got a new stream!")
+	log.Println("New list of peers =", defs.Ha.Peerstore().Peers())
 
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
@@ -45,13 +45,13 @@ func readData(rw *bufio.ReadWriter) {
 	for {
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 
 		if str == "" {
 			return
 		}
-		if str != "\n" {
+		if str != "Exit\n" {
 
 			chain := make([]defs.Block, 0)
 			if err := json.Unmarshal([]byte(str), &chain); err != nil {
@@ -68,6 +68,12 @@ func readData(rw *bufio.ReadWriter) {
 				}
 				// Green console color: 	\x1b[32m
 				// Reset console color: 	\x1b[0m
+				if len(defs.Blockchain) > blockchain.LastRcvdBlockchainLen {
+					// Green console color: 	\x1b[32m
+					// Reset console color: 	\x1b[0m
+					fmt.Printf("\x1b[32m%s\x1b[0m> ", string(bytes))
+					blockchain.LastRcvdBlockchainLen = len(defs.Blockchain)
+				}
 				fmt.Printf("\x1b[32m%s\x1b[0m> ", string(bytes))
 			}
 			defs.Mutex.Unlock()
@@ -90,6 +96,10 @@ func writeData(rw *bufio.ReadWriter) {
 			defs.Mutex.Lock()
 			rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
 			rw.Flush()
+			if len(defs.Blockchain) > blockchain.LastSentBlockchainLen {
+				fmt.Sprintf("%s\n", string(bytes))
+				blockchain.LastSentBlockchainLen = len(defs.Blockchain)
+			}
 			defs.Mutex.Unlock()
 
 		}
@@ -104,13 +114,12 @@ func writeData(rw *bufio.ReadWriter) {
 			log.Fatal(err)
 		}
 
-		sendData = strings.Replace(sendData, "\n", "", -1)
-		sendData = strings.Replace(sendData, "\r", "", -1)
+		sendData = strings.Replace(sendData, "\r", "", -1) + " (From terminal)"
 		acc := sendData
 		if err != nil {
 			log.Fatal(err)
 		}
-		newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], acc, "", 0)
+		newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], acc, "", 0, ThisPeerFullAddr)
 
 		if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
 			defs.Mutex.Lock()
@@ -128,7 +137,7 @@ func writeData(rw *bufio.ReadWriter) {
 		defs.Mutex.Lock()
 		rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
 		rw.Flush()
+		blockchain.LastSentBlockchainLen = len(defs.Blockchain)
 		defs.Mutex.Unlock()
 	}
-
 }

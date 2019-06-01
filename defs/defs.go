@@ -18,6 +18,12 @@ import (
 var Secio *bool
 var Verbose *bool
 var Seed *int64
+var DataDir *string
+var BootstrapperAddr *string
+
+const (
+	bootstrapperPort = "51000"
+)
 
 var Ha host.Host
 
@@ -34,10 +40,18 @@ type Block struct {
 	Transaction Transaction
 	Hash        string
 	PrevHash    string
+	Validator   string
 }
 
 // Blockchain is a series of validated Blocks
 var Blockchain []Block
+
+var TempBlocks []Block
+
+// validators keeps track of open validators and balances
+var Validators = make(map[string]int)
+
+var Winner string
 
 // Message takes incoming JSON payload for writing heart rate
 type Message struct {
@@ -79,5 +93,13 @@ func ReadFlags() {
 	Secio = flag.Bool("secio", false, "enable secio")
 	Verbose = flag.Bool("verbose", false, "enable verbose")
 	Seed = flag.Int64("seed", 0, "set random seed for id generation")
+	DataDir = flag.String("data", "data", "pathname of data directory")
+	BootstrapperAddr = flag.String("b", "local", "Address of bootstrapper")
 	flag.Parse()
+
+	if *BootstrapperAddr == "local" {
+		*BootstrapperAddr = "http://localhost:" + bootstrapperPort + "/"
+	} else {
+		*BootstrapperAddr = "http://" + *BootstrapperAddr + ":" + bootstrapperPort + "/"
+	}
 }

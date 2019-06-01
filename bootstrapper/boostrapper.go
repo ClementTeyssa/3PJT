@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	gonet "net"
 	"net/http"
 	"sync"
 	"time"
@@ -21,6 +22,12 @@ var MaxPeerPort int
 
 type Peer struct {
 	PeerAddress string `json:"PeerAddress"`
+}
+
+var ListOfPeers []Peer
+
+func GetListOfPeers() []Peer {
+	return ListOfPeers
 }
 
 func (p Peer) Addr() string {
@@ -43,7 +50,7 @@ func init() {
 	log.SetFlags(log.Lshortfile)
 	verbose = flag.Bool("v", false, "enable verbose")
 	flag.Parse()
-	MaxPeerPort = 4999 // starting peer port
+	MaxPeerPort = 3499 // starting peer port
 }
 
 func main() {
@@ -52,7 +59,7 @@ func main() {
 
 func launchMUXServer() error { // launch MUX server
 	mux := makeMUXRouter()
-	log.Println("HTTP MUX server listening on port:", listenPort) // listenPort is a global const
+	log.Println("HTTP MUX server listening on " + GetMyIP() + ":" + listenPort) // listenPort is a global const
 	s := &http.Server{
 		Addr:           ":" + listenPort,
 		Handler:        mux,
@@ -107,6 +114,8 @@ func handleEnroll(w http.ResponseWriter, r *http.Request) {
 
 	_ = updatePeerGraph(incomingPeer)
 	log.Println("Enroll request from:", incomingPeer.ThisPeer, "successful")
+	ListOfPeers = append(ListOfPeers, incomingPeer.ThisPeer)
+	Validators = append(Validators, [incomingPeer.ThisPeer.Addr, 0])
 	respondWithJSON(w, r, http.StatusCreated, incomingPeer)
 }
 
@@ -164,4 +173,17 @@ func updatePeerGraph(inPeer PeerProfile) error {
 	}
 	graphMutex.Unlock()
 	return nil
+}
+
+func GetMyIP() string {
+	var MyIP string
+
+	conn, err := gonet.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatalln(err)
+	} else {
+		localAddr := conn.LocalAddr().(*gonet.UDPAddr)
+		MyIP = localAddr.IP.String()
+	}
+	return MyIP
 }

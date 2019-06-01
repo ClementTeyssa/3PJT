@@ -5,13 +5,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
+	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 
-	blockchain "../blockchain"
 	defs "../defs"
 )
 
@@ -19,7 +17,6 @@ import (
 func makeMuxRouter() http.Handler {
 	router := mux.NewRouter()
 	router.HandleFunc("/", handleGetBlockchain).Methods("GET")
-	router.HandleFunc("/", handleWriteBlock).Methods("POST")
 	router.HandleFunc("/connect", handleConnect).Methods("POST")
 	return router
 }
@@ -27,10 +24,10 @@ func makeMuxRouter() http.Handler {
 // web server
 func MuxServer() error {
 	mux := makeMuxRouter()
-	httpPort := os.Getenv("PORT")
-	log.Println("HTTP Server Listening on port :", peerProfile.PeerPort) // peerProfile.PeerPort in peer-manager.go
+	//httpPort := os.Getenv("PORT")
+	log.Println("HTTP Server Listening on port :", peerProfile.PeerPort+1500) // peerProfile.PeerPort in peer-manager.go
 	s := &http.Server{
-		Addr:           ":" + httpPort,
+		Addr:           ":" + strconv.Itoa(peerProfile.PeerPort+1500),
 		Handler:        mux,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
@@ -58,30 +55,32 @@ func handleGetBlockchain(writter http.ResponseWriter, request *http.Request) {
 }
 
 // read a new transaction
-func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var m defs.Message
+// func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	reader := bufio.NewReader(os.Stdin)
+// 	t, _ := reader.ReadString('\n')
+// 	//var t StdInput
 
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&m); err != nil {
-		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
-		return
-	}
-	defer r.Body.Close()
+// 	decoder := json.NewDecoder(r.Body)
+// 	if err := decoder.Decode(&t); err != nil {
+// 		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
+// 		return
+// 	}
+// 	defer r.Body.Close()
 
-	defs.Mutex.Lock()
-	newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], "", "", 0)
-	defs.Mutex.Unlock()
+// 	defs.Mutex.Lock()
+// 	newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], "", "", 0)
+// 	defs.Mutex.Unlock()
 
-	if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
-		defs.Mutex.Lock()
-		defs.Blockchain = append(defs.Blockchain, newBlock)
-		defs.Mutex.Unlock()
-		spew.Dump(defs.Blockchain)
-	}
+// 	if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
+// 		defs.Mutex.Lock()
+// 		defs.Blockchain = append(defs.Blockchain, newBlock)
+// 		defs.Mutex.Unlock()
+// 		spew.Dump(defs.Blockchain)
+// 	}
 
-	respondWithJSON(w, r, http.StatusCreated, newBlock)
-}
+// 	respondWithJSON(w, r, http.StatusCreated, newBlock)
+// }
 
 func handleConnect(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -96,7 +95,7 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	log.Println("mux NewTarget =", m.NewTarget)
+	log.Println("MUX NewTarget =", m.NewTarget)
 	connect2Target(m.NewTarget)
 	respondWithJSON(w, r, http.StatusCreated, m.NewTarget)
 }
@@ -108,8 +107,7 @@ func respondWithJSON(writter http.ResponseWriter, request *http.Request, code in
 		writter.WriteHeader(http.StatusInternalServerError)
 		writter.Write([]byte("HTTP 500: Internal Server Error"))
 		return
-	} else {
-		writter.WriteHeader(code)
-		writter.Write(response)
 	}
+	writter.WriteHeader(code)
+	writter.Write(response)
 }
