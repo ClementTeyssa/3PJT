@@ -69,8 +69,7 @@ func P2pInit() {
 	connectP2PNet()
 	enrollP2PNet()
 	log.Println("Peerstore().Peers() after connecting =", defs.Ha.Peerstore().Peers())
-	//sendNodeAddr()
-	//getAllNodes()
+	sendNodeAddr()
 }
 
 func connect2Target(newTarget string) {
@@ -342,7 +341,7 @@ func sendNodeAddr() {
 	log.Println("Sending addresses to Bootstrapper", *defs.BootstrapperAddr)
 	defs.MyNode.PhAddr = peerProfile.ThisPeer.PeerAddress
 	defs.Nodes = append(defs.Nodes, defs.MyNode)
-	jsonValue, err := json.Marshal(defs.Nodes)
+	jsonValue, err := json.Marshal(defs.MyNode)
 	if err != nil {
 		log.Println(err)
 		return
@@ -362,24 +361,6 @@ func sendNodeAddr() {
 	if *defs.Verbose {
 		log.Println("response Headers:", response.Header)
 	}
-}
-
-func getAllNodes() {
-	log.Println("Get all nodes", *defs.BootstrapperAddr)
-
-	response, err := http.Get(*defs.BootstrapperAddr + "get-nodes")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer response.Body.Close()
-
-	responseData, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	fmt.Println(string(responseData))
 }
 
 func cleanup(rw *bufio.ReadWriter) {

@@ -33,6 +33,7 @@ func handleStream(s net.Stream) {
 	go func() {
 		<-ch
 		log.Println("Received Interrupt. Exiting now.")
+		//Send kill to dnode
 		cleanup(rw)
 		os.Exit(1)
 	}()
@@ -65,10 +66,10 @@ func readData(rw *bufio.ReadWriter) {
 					log.Fatal(err)
 				}
 				if len(defs.Blockchain) > blockchain.LastRcvdBlockchainLen {
-					fmt.Printf("\x1b[32m%s\x1b[0m> ", string(bytes))
+					fmt.Printf("%s ", string(bytes))
 					blockchain.LastRcvdBlockchainLen = len(defs.Blockchain)
 				}
-				fmt.Printf("\x1b[32m%s\x1b[0m> ", string(bytes))
+				fmt.Printf("%s ", string(bytes))
 			}
 			defs.Mutex.Unlock()
 		}
