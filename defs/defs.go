@@ -110,8 +110,6 @@ func ReadFlags() {
 	//Target = flag.String("d", "", "target peer to dial")
 	Secio = flag.Bool("secio", false, "enable secio")
 	Verbose = flag.Bool("verbose", false, "enable verbose")
-	Seed = flag.Int64("seed", 0, "set random seed for id generation")
-	DataDir = flag.String("data", "data", "pathname of data directory")
 	BootstrapperAddr = flag.String("b", "local", "Address of bootstrapper")
 	flag.Parse()
 
@@ -120,5 +118,5 @@ func ReadFlags() {
 	} else {
 		*BootstrapperAddr = "http://" + *BootstrapperAddr + ":" + bootstrapperPort + "/"
 	}
-	//*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
+	*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
 }
