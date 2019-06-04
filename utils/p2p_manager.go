@@ -69,16 +69,8 @@ func P2pInit() {
 	connectP2PNet()
 	enrollP2PNet()
 	log.Println("Peerstore().Peers() after connecting =", defs.Ha.Peerstore().Peers())
-
-	// go func() {
-	// 	for {
-	// 		time.Sleep(5 * time.Second)
-	// 		fmt.Println("\nList of peers:")
-	// 		for i, _ := range defs.Ha.Peerstore().Peers() {
-	// 			log.Println("-->", defs.Ha.Peerstore().Peers()[i].Pretty())
-	// 		}
-	// 	}
-	// }()
+	sendNodeAddr()
+	//getAllNodes()
 }
 
 func connect2Target(newTarget string) {
@@ -216,14 +208,6 @@ func connectP2PNet() {
 
 	if len(PeerGraph) == 0 { // first node in the network
 		log.Println("I'm first peer. Creating Genesis Block.")
-		// t := time.Now()
-		// genesisBlock := defs.Block{}
-		// var transaction defs.Transaction
-		// transaction.AccountTo = ""
-		// transaction.AccountFrom = ""
-		// transaction.Amount = 0
-		// genesisBlock = defs.Block{0, t.String(), transaction, blockchain.CalculateHash(genesisBlock), ""}
-
 		defs.Blockchain = append(defs.Blockchain, blockchain.GenerateGenesisBlock())
 		spew.Dump(defs.Blockchain)
 		log.Println("I'm first peer. Listening for connections.")
@@ -352,6 +336,50 @@ func makeBasicHost(listenPort int, secio bool, randseed int64) {
 	if *defs.Verbose {
 		log.Printf("basicHost = ", defs.Ha)
 	}
+}
+
+func sendNodeAddr() {
+	log.Println("Sending addresses to Bootstrapper", *defs.BootstrapperAddr)
+	defs.MyNode.PhAddr = peerProfile.ThisPeer.PeerAddress
+	defs.Nodes = append(defs.Nodes, defs.MyNode)
+	jsonValue, err := json.Marshal(defs.Nodes)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	url := *defs.BootstrapperAddr + "node-addr"
+	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer response.Body.Close()
+
+	if *defs.Verbose {
+		log.Println("response Status:", response.Status)
+	}
+	if *defs.Verbose {
+		log.Println("response Headers:", response.Header)
+	}
+}
+
+func getAllNodes() {
+	log.Println("Get all nodes", *defs.BootstrapperAddr)
+
+	response, err := http.Get(*defs.BootstrapperAddr + "get-nodes")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer response.Body.Close()
+
+	responseData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fmt.Println(string(responseData))
 }
 
 func cleanup(rw *bufio.ReadWriter) {

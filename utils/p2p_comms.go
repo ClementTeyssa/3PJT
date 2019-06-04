@@ -7,13 +7,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	blockchain "../blockchain"
 	defs "../defs"
-	"github.com/davecgh/go-spew/spew"
 	net "github.com/libp2p/go-libp2p-net"
 )
 
@@ -66,11 +64,7 @@ func readData(rw *bufio.ReadWriter) {
 
 					log.Fatal(err)
 				}
-				// Green console color: 	\x1b[32m
-				// Reset console color: 	\x1b[0m
 				if len(defs.Blockchain) > blockchain.LastRcvdBlockchainLen {
-					// Green console color: 	\x1b[32m
-					// Reset console color: 	\x1b[0m
 					fmt.Printf("\x1b[32m%s\x1b[0m> ", string(bytes))
 					blockchain.LastRcvdBlockchainLen = len(defs.Blockchain)
 				}
@@ -85,7 +79,7 @@ func writeData(rw *bufio.ReadWriter) {
 
 	go func() {
 		for {
-			time.Sleep(5 * time.Second)
+			time.Sleep(15 * time.Second)
 			defs.Mutex.Lock()
 			bytes, err := json.Marshal(defs.Blockchain)
 			if err != nil {
@@ -105,39 +99,39 @@ func writeData(rw *bufio.ReadWriter) {
 		}
 	}()
 
-	stdReader := bufio.NewReader(os.Stdin)
+	// stdReader := bufio.NewReader(os.Stdin)
 
-	for {
-		fmt.Print("> ")
-		sendData, err := stdReader.ReadString('\n')
-		if err != nil {
-			log.Fatal(err)
-		}
+	// for {
+	// 	fmt.Print("> ")
+	// 	sendData, err := stdReader.ReadString('\n')
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
 
-		sendData = strings.Replace(sendData, "\r", "", -1) + " (From terminal)"
-		acc := sendData
-		if err != nil {
-			log.Fatal(err)
-		}
-		newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], acc, "", 0, ThisPeerFullAddr)
+	// 	sendData = strings.Replace(sendData, "\r", "", -1) + " (From terminal)"
+	// 	acc := sendData
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], acc, "", 0)
 
-		if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
-			defs.Mutex.Lock()
-			defs.Blockchain = append(defs.Blockchain, newBlock)
-			defs.Mutex.Unlock()
-		}
+	// 	if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
+	// 		defs.Mutex.Lock()
+	// 		defs.Blockchain = append(defs.Blockchain, newBlock)
+	// 		defs.Mutex.Unlock()
+	// 	}
 
-		bytes, err := json.Marshal(defs.Blockchain)
-		if err != nil {
-			log.Println(err)
-		}
+	// 	bytes, err := json.Marshal(defs.Blockchain)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
 
-		spew.Dump(defs.Blockchain)
+	// 	spew.Dump(defs.Blockchain)
 
-		defs.Mutex.Lock()
-		rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
-		rw.Flush()
-		blockchain.LastSentBlockchainLen = len(defs.Blockchain)
-		defs.Mutex.Unlock()
-	}
+	// 	defs.Mutex.Lock()
+	// 	rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+	// 	rw.Flush()
+	// 	blockchain.LastSentBlockchainLen = len(defs.Blockchain)
+	// 	defs.Mutex.Unlock()
+	// }
 }

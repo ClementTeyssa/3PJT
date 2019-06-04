@@ -1,30 +1,43 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 
+	blockchain "../blockchain"
 	defs "../defs"
 )
+
+type Transaction struct {
+	AccountFrom string  `json:"accfrom"`
+	AccountTo   string  `json:"accto"`
+	Amount      float32 `json:"amount"`
+	PrivateKey  []byte  `json:"privatekey"`
+}
 
 // create http handlers
 func makeMuxRouter() http.Handler {
 	router := mux.NewRouter()
 	router.HandleFunc("/", handleGetBlockchain).Methods("GET")
 	router.HandleFunc("/connect", handleConnect).Methods("POST")
+	router.HandleFunc("/verif-transac", verifTransaction).Methods("POST")
+	router.HandleFunc("/gen-block", generateBlock).Methods("POST")
 	return router
 }
 
 // web server
 func MuxServer() error {
 	mux := makeMuxRouter()
-	//httpPort := os.Getenv("PORT")
 	log.Println("HTTP Server Listening on port :", peerProfile.PeerPort+1500) // peerProfile.PeerPort in peer-manager.go
 	s := &http.Server{
 		Addr:           ":" + strconv.Itoa(peerProfile.PeerPort+1500),
@@ -54,34 +67,6 @@ func handleGetBlockchain(writter http.ResponseWriter, request *http.Request) {
 	io.WriteString(writter, string(bytes))
 }
 
-// read a new transaction
-// func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	reader := bufio.NewReader(os.Stdin)
-// 	t, _ := reader.ReadString('\n')
-// 	//var t StdInput
-
-// 	decoder := json.NewDecoder(r.Body)
-// 	if err := decoder.Decode(&t); err != nil {
-// 		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
-// 		return
-// 	}
-// 	defer r.Body.Close()
-
-// 	defs.Mutex.Lock()
-// 	newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], "", "", 0)
-// 	defs.Mutex.Unlock()
-
-// 	if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
-// 		defs.Mutex.Lock()
-// 		defs.Blockchain = append(defs.Blockchain, newBlock)
-// 		defs.Mutex.Unlock()
-// 		spew.Dump(defs.Blockchain)
-// 	}
-
-// 	respondWithJSON(w, r, http.StatusCreated, newBlock)
-// }
-
 func handleConnect(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var m defs.NewTargetJson
@@ -98,6 +83,70 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 	log.Println("MUX NewTarget =", m.NewTarget)
 	connect2Target(m.NewTarget)
 	respondWithJSON(w, r, http.StatusCreated, m.NewTarget)
+}
+
+func verifTransaction(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var transac Transaction
+	var goodRes defs.GoodResult
+	var myErr defs.MyError
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&transac); err != nil {
+		log.Println(err)
+		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
+		return
+	}
+	defer r.Body.Close()
+	data, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(data, &transac)
+	jsonValue, _ := json.Marshal(transac)
+	response, err := http.Post("https://3pjt-api.infux.fr/transactions/verify", "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		fmt.Printf("The HTTP request failed with error %s\n", err)
+		return
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		err = json.Unmarshal(data, &goodRes)
+		if err != nil {
+			json.Unmarshal(data, &myErr)
+			respondWithJSON(w, r, http.StatusCreated, myErr)
+		} else {
+			respondWithJSON(w, r, http.StatusCreated, goodRes)
+		}
+	}
+}
+
+func generateBlock(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var transac Transaction
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&transac); err != nil {
+		log.Println(err)
+		return
+	}
+	defer r.Body.Close()
+	data, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(data, &transac)
+	newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], transac.AccountFrom, transac.AccountTo, transac.Amount)
+
+	if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
+		defs.Mutex.Lock()
+		defs.Blockchain = append(defs.Blockchain, newBlock)
+		defs.Mutex.Unlock()
+	}
+
+	_, err := json.Marshal(defs.Blockchain)
+	if err != nil {
+		log.Println(err)
+	}
+
+	spew.Dump(defs.Blockchain)
+
+	defs.Mutex.Lock()
+	blockchain.LastSentBlockchainLen = len(defs.Blockchain)
+	defs.Mutex.Unlock()
+
+	respondWithJSON(w, r, http.StatusCreated, newBlock)
 }
 
 // respond with JSON

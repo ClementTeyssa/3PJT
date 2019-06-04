@@ -13,8 +13,6 @@ import (
 
 ///// FLAG & VARIABLES
 
-//var ListenF *int
-//var Target *string
 var Secio *bool
 var Verbose *bool
 var Seed *int64
@@ -25,35 +23,55 @@ const (
 	bootstrapperPort = "51000"
 )
 
+type GoodResult struct {
+	Good string `json:"good"`
+}
+
+type MyError struct {
+	Error string `json:"error"`
+}
+
 var Ha host.Host
 
 type Transaction struct {
-	AccountFrom string
-	AccountTo   string
-	Amount      float32
+	AccountFrom string  `json:"accfrom"`
+	AccountTo   string  `json:"accto"`
+	Amount      float32 `json:"amount"`
 }
+
+type Status struct {
+	Status string `json:"status"`
+}
+
+type Node struct {
+	PhAddr string `json:"ipAdress"`
+	TxAddr string `json:"adress"`
+}
+
+var MyNode Node
+
+var Nodes []Node
 
 // Block represents each 'item' in the blockchain
 type Block struct {
-	Index       int
-	Timestamp   string
+	Index       int    `json:"id"`
+	Timestamp   string `json:"timestamp"`
 	Transaction Transaction
-	Hash        string
-	PrevHash    string
-	Validator   string
+	Hash        string `json:"hash"`
+	PrevHash    string `json:"prevhash"`
 }
 
 // Blockchain is a series of validated Blocks
 var Blockchain []Block
 
-var TempBlocks []Block
-
-// validators keeps track of open validators and balances
-var Validators = make(map[string]int)
-
-var Winner string
-
 // Message takes incoming JSON payload for writing heart rate
+type User struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+var MyUser User
+
 type Message struct {
 	transaction Transaction
 }
@@ -102,4 +120,5 @@ func ReadFlags() {
 	} else {
 		*BootstrapperAddr = "http://" + *BootstrapperAddr + ":" + bootstrapperPort + "/"
 	}
+	//*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
 }
