@@ -18,6 +18,13 @@ const (
 	listenPort = "51000"
 )
 
+type Node struct {
+	PhAddr string `json:"ipAdress"`
+	TxAddr string `json:"adress"`
+}
+
+var Nodes []Node
+
 var MaxPeerPort int
 
 type Peer struct {
@@ -79,6 +86,8 @@ func makeMUXRouter() http.Handler { // create handlers
 	muxRouter.HandleFunc("/query-p2p-graph", handleQuery).Methods("GET")
 	muxRouter.HandleFunc("/enroll-p2p-net", handleEnroll).Methods("POST")
 	muxRouter.HandleFunc("/port-request", handlePortReq).Methods("GET")
+	muxRouter.HandleFunc("/node-addr", handleNodeAddr).Methods("POST")
+	muxRouter.HandleFunc("/get-nodes", getAllNodes).Methods("GET")
 	return muxRouter
 }
 
@@ -103,7 +112,6 @@ func handleEnroll(w http.ResponseWriter, r *http.Request) {
 	log.Println("handleEnroll() API called")
 	w.Header().Set("Content-Type", "application/json")
 	var incomingPeer PeerProfile
-
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&incomingPeer); err != nil {
 		log.Println(err)
@@ -115,7 +123,6 @@ func handleEnroll(w http.ResponseWriter, r *http.Request) {
 	_ = updatePeerGraph(incomingPeer)
 	log.Println("Enroll request from:", incomingPeer.ThisPeer, "successful")
 	ListOfPeers = append(ListOfPeers, incomingPeer.ThisPeer)
-	Validators = append(Validators, [incomingPeer.ThisPeer.Addr, 0])
 	respondWithJSON(w, r, http.StatusCreated, incomingPeer)
 }
 
@@ -186,4 +193,24 @@ func GetMyIP() string {
 		MyIP = localAddr.IP.String()
 	}
 	return MyIP
+}
+
+func handleNodeAddr(w http.ResponseWriter, r *http.Request) {
+	log.Println("handleNodeAddr() API called")
+	w.Header().Set("Content-Type", "application/json")
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&Nodes); err != nil {
+		log.Println(err)
+		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
+		return
+	}
+	defer r.Body.Close()
+	//log.Println("Enroll request from:", incomingPeer.ThisPeer, "successful")
+	respondWithJSON(w, r, http.StatusCreated, r.Body)
+}
+
+func getAllNodes(w http.ResponseWriter, r *http.Request) {
+	log.Println("getAllNodes() API called")
+	w.Header().Set("Content-Type", "application/json")
+	respondWithJSON(w, r, http.StatusCreated, Nodes)
 }
