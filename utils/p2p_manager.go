@@ -69,7 +69,7 @@ func P2pInit() {
 	connectP2PNet()
 	enrollP2PNet()
 	log.Println("Peerstore().Peers() after connecting =", defs.Ha.Peerstore().Peers())
-	sendNodeAddr()
+	//sendNodeAddr()
 	//getAllNodes()
 }
 

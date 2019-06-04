@@ -12,11 +12,9 @@ import (
 )
 
 ///// FLAG & VARIABLES
-
+var Seed *int64
 var Secio *bool
 var Verbose *bool
-var Seed *int64
-var DataDir *string
 var BootstrapperAddr *string
 
 const (
@@ -108,6 +106,7 @@ func ReadFlags() {
 	// Parse options from the command line
 	//ListenF = flag.Int("l", 0, "wait for incoming connections")
 	//Target = flag.String("d", "", "target peer to dial")
+	Seed = flag.Int64("seed", 0, "set random seed for id generation")
 	Secio = flag.Bool("secio", false, "enable secio")
 	Verbose = flag.Bool("verbose", false, "enable verbose")
 	BootstrapperAddr = flag.String("b", "local", "Address of bootstrapper")
@@ -118,5 +117,5 @@ func ReadFlags() {
 	} else {
 		*BootstrapperAddr = "http://" + *BootstrapperAddr + ":" + bootstrapperPort + "/"
 	}
-	*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
+	//*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
 }
