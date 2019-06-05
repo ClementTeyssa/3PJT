@@ -21,14 +21,6 @@ const (
 	bootstrapperPort = "51000"
 )
 
-type GoodResult struct {
-	Good string `json:"good"`
-}
-
-type MyError struct {
-	Error string `json:"error"`
-}
-
 var Ha host.Host
 
 type Transaction struct {

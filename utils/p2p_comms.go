@@ -34,11 +34,15 @@ func handleStream(s net.Stream) {
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-ch
-		log.Println("Received Interrupt. Exiting now.")
-		CleanAddr()
-		cleanup(rw)
-		os.Exit(1)
+		close(rw)
 	}()
+}
+
+func close(rw *bufio.ReadWriter) {
+	log.Println("Received Interrupt. Exiting now.")
+	CleanAddr()
+	cleanup(rw)
+	os.Exit(1)
 }
 
 func CleanAddr() {
@@ -127,6 +131,10 @@ func writeData(rw *bufio.ReadWriter) {
 	// 	if err != nil {
 	// 		log.Fatal(err)
 	// 	}
+	// 	if strings.Contains(sendData, "Exit") {
+	// 		close(rw)
+	// 	}
+	// }
 
 	// 	sendData = strings.Replace(sendData, "\r", "", -1) + " (From terminal)"
 	// 	acc := sendData

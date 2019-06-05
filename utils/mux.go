@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	gonet "net"
 	"net/http"
 	"strconv"
 	"time"
@@ -17,6 +18,14 @@ import (
 	blockchain "../blockchain"
 	defs "../defs"
 )
+
+type GoodResult struct {
+	Good string `json:"good"`
+}
+
+type MyError struct {
+	Error string `json:"error"`
+}
 
 type Transaction struct {
 	AccountFrom string  `json:"accountfrom"`
@@ -38,7 +47,7 @@ func makeMuxRouter() http.Handler {
 // web server
 func MuxServer() error {
 	mux := makeMuxRouter()
-	log.Println("HTTP Server Listening on port :", peerProfile.PeerPort) // peerProfile.PeerPort in peer-manager.go
+	log.Println("HTTP Server Listening on " + GetMyIP() + ":" + strconv.Itoa(peerProfile.PeerPort)) // peerProfile.PeerPort in peer-manager.go
 	s := &http.Server{
 		Addr:           ":" + strconv.Itoa(peerProfile.PeerPort),
 		Handler:        mux,
@@ -88,8 +97,8 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 func verifTransaction(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var transac Transaction
-	var goodRes defs.GoodResult
-	var myErr defs.MyError
+	var goodRes GoodResult
+	var myErr MyError
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&transac); err != nil {
 		log.Println(err)
@@ -107,7 +116,7 @@ func verifTransaction(w http.ResponseWriter, r *http.Request) {
 	} else {
 		data, _ := ioutil.ReadAll(response.Body)
 		err = json.Unmarshal(data, &goodRes)
-		if err != nil {
+		if goodRes.Good == "" {
 			json.Unmarshal(data, &myErr)
 			respondWithJSON(w, r, http.StatusCreated, myErr)
 		} else {
@@ -159,4 +168,17 @@ func respondWithJSON(writter http.ResponseWriter, request *http.Request, code in
 	}
 	writter.WriteHeader(code)
 	writter.Write(response)
+}
+
+func GetMyIP() string {
+	var MyIP string
+
+	conn, err := gonet.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatalln(err)
+	} else {
+		localAddr := conn.LocalAddr().(*gonet.UDPAddr)
+		MyIP = localAddr.IP.String()
+	}
+	return MyIP
 }
