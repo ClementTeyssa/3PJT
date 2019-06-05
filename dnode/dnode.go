@@ -12,6 +12,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
+	"github.com/tomasen/realip"
 )
 
 const (
@@ -195,6 +196,8 @@ func GetMyIP() string {
 
 func handleNodeAddr(w http.ResponseWriter, r *http.Request) {
 	log.Println("handleNodeAddr() API called")
+	log.Println(string(realip.FromRequest(r)))
+	log.Println(realip.FromRequest(r))
 	w.Header().Set("Content-Type", "application/json")
 	var node Node
 	decoder := json.NewDecoder(r.Body)
