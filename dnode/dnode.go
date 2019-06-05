@@ -3,16 +3,16 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
-	gonet "net"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
-	"github.com/tomasen/realip"
 )
 
 const (
@@ -182,22 +182,34 @@ func updatePeerGraph(inPeer PeerProfile) error {
 }
 
 func GetMyIP() string {
-	var MyIP string
+	//var MyIP string
+	//
+	// conn, err := gonet.Dial("udp", "8.8.8.8:80")
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// } else {
+	// 	localAddr := conn.LocalAddr().(*gonet.UDPAddr)
+	// 	MyIP = localAddr.IP.String()
+	// }
+	// return MyIP
 
-	conn, err := gonet.Dial("udp", "8.8.8.8:80")
+	url := "https://api.ipify.org?format=text"
+	fmt.Printf("Getting IP address from  ipify\n")
+	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalln(err)
-	} else {
-		localAddr := conn.LocalAddr().(*gonet.UDPAddr)
-		MyIP = localAddr.IP.String()
+		panic(err)
 	}
-	return MyIP
+	defer resp.Body.Close()
+	MyIP, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Printf("My IP is:%s\n", MyIP)
+	return string(MyIP)
 }
 
 func handleNodeAddr(w http.ResponseWriter, r *http.Request) {
 	log.Println("handleNodeAddr() API called")
-	log.Println(string(realip.FromRequest(r)))
-	log.Println(realip.FromRequest(r))
 	w.Header().Set("Content-Type", "application/json")
 	var node Node
 	decoder := json.NewDecoder(r.Body)

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"sync"
 	"syscall"
 
@@ -168,6 +169,10 @@ func requestPort() { // Requesting PeerPort
 	}
 
 	json.Unmarshal(responseData, &peerProfile.PeerPort)
+	if *defs.Port != 0 {
+		peerProfile.PeerPort = *defs.Port
+	}
+
 	if *defs.Verbose {
 		log.Println("PeerPort = ", peerProfile.PeerPort)
 	}
@@ -329,8 +334,9 @@ func makeBasicHost(listenPort int, secio bool, randseed int64) {
 	}
 	fullAddr := addr.Encapsulate(hostAddr)
 	log.Printf("My fullAddr = %s\n", fullAddr)
-	ThisPeerFullAddr = fullAddr.String()
-
+	var re = regexp.MustCompile(`/ip4/*.*.*.*/tcp`)
+	ThisPeerFullAddr = re.ReplaceAllString(fullAddr.String(), "/ip4/"+GetMyIP()+"/tcp")
+	//ThisPeerFullAddr = fullAddr.String()
 	//return basicHost, nil
 	defs.Ha = basicHost // ha defined in defs.go
 	if *defs.Verbose {
