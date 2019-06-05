@@ -19,8 +19,8 @@ import (
 )
 
 type Transaction struct {
-	AccountFrom string  `json:"accfrom"`
-	AccountTo   string  `json:"accto"`
+	AccountFrom string  `json:"accountfrom"`
+	AccountTo   string  `json:"accountto"`
 	Amount      float32 `json:"amount"`
 	PrivateKey  []byte  `json:"privatekey"`
 }
@@ -38,9 +38,9 @@ func makeMuxRouter() http.Handler {
 // web server
 func MuxServer() error {
 	mux := makeMuxRouter()
-	log.Println("HTTP Server Listening on port :", peerProfile.PeerPort+1500) // peerProfile.PeerPort in peer-manager.go
+	log.Println("HTTP Server Listening on port :", peerProfile.PeerPort) // peerProfile.PeerPort in peer-manager.go
 	s := &http.Server{
-		Addr:           ":" + strconv.Itoa(peerProfile.PeerPort+1500),
+		Addr:           ":" + strconv.Itoa(peerProfile.PeerPort),
 		Handler:        mux,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,

@@ -142,6 +142,7 @@ func connect2Target(newTarget string) {
 	go func() {
 		<-ch
 		log.Println("Received Interrupt. Exiting now.")
+		CleanAddr()
 		cleanup(rw)
 		os.Exit(1)
 	}()

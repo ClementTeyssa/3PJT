@@ -2,9 +2,11 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,10 +35,27 @@ func handleStream(s net.Stream) {
 	go func() {
 		<-ch
 		log.Println("Received Interrupt. Exiting now.")
-		//Send kill to dnode
+		CleanAddr()
 		cleanup(rw)
 		os.Exit(1)
 	}()
+}
+
+func CleanAddr() {
+	log.Println("Cleaning address")
+
+	jsonValue, err := json.Marshal(peerProfile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	url := *defs.BootstrapperAddr + "remove-peer"
+	_, err = http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 func readData(rw *bufio.ReadWriter) {
