@@ -1,0 +1,91 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "CSPbwbyzqA6sfORicn4HFtIhF/c=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "d8f796af33cc11cb798c1aaeb27a4ebc5099927d",
+			"revisionTime": "2018-08-30T19:11:22Z"
+		},
+		{
+			"checksumSHA1": "jyCYGbN0KvpV6PasLXLOmNsaA3s=",
+			"path": "github.com/gogo/protobuf/proto",
+			"revision": "21df5aa0e680850681b8643f0024f92d3b09930c",
+			"revisionTime": "2019-06-01T10:31:08Z"
+		},
+		{
+			"checksumSHA1": "WgzN84Tx+7en7p/e8gSTupIqygw=",
+			"path": "github.com/gorilla/mux",
+			"revision": "c5c6c98bc25355028a63748a498942a6398ccd22",
+			"revisionTime": "2019-03-16T13:32:43Z"
+		},
+		{
+			"checksumSHA1": "vvR6/kw6IWKu0iFyyDgn9vmkkJw=",
+			"path": "github.com/ipfs/go-log",
+			"revision": "91b837264c0f35dd4e2be341d711316b91d3573d",
+			"revisionTime": "2019-02-28T15:14:32Z"
+		},
+		{
+			"checksumSHA1": "LmH0xHNKxGsFvgQSeiaDQHXZnGI=",
+			"path": "github.com/ipfs/go-log/tracer",
+			"revision": "91b837264c0f35dd4e2be341d711316b91d3573d",
+			"revisionTime": "2019-02-28T15:14:32Z"
+		},
+		{
+			"checksumSHA1": "wvP2th0oAJePzEFKMfPOyLkIcRs=",
+			"path": "github.com/ipfs/go-log/tracer/wire",
+			"revision": "91b837264c0f35dd4e2be341d711316b91d3573d",
+			"revisionTime": "2019-02-28T15:14:32Z"
+		},
+		{
+			"checksumSHA1": "bl9JfF5EYfN40i+L1PnuabCunYw=",
+			"path": "github.com/ipfs/go-log/writer",
+			"revision": "91b837264c0f35dd4e2be341d711316b91d3573d",
+			"revisionTime": "2019-02-28T15:14:32Z"
+		},
+		{
+			"checksumSHA1": "TZ1sJQ03juGU53DFxbI1g7RgU50=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "8029fb3788e5a4a9c00e415f586a6d033f5d38b3",
+			"revisionTime": "2019-05-24T00:26:58Z"
+		},
+		{
+			"checksumSHA1": "74gCzvJiE6bXX3i4vIVCYhffDHc=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "1311e847b0cb909da63b5fecfb5370aa66236465",
+			"revisionTime": "2019-05-22T01:25:13Z"
+		},
+		{
+			"checksumSHA1": "6EIQaeaWECn3zlechdGkqmIKld4=",
+			"path": "github.com/opentracing/opentracing-go",
+			"revision": "659c90643e714681897ec2521c60567dd21da733",
+			"revisionTime": "2019-03-23T20:25:03Z"
+		},
+		{
+			"checksumSHA1": "hZnCURJIhg56jbKk0UFRfZkcQ+c=",
+			"path": "github.com/opentracing/opentracing-go/ext",
+			"revision": "659c90643e714681897ec2521c60567dd21da733",
+			"revisionTime": "2019-03-23T20:25:03Z"
+		},
+		{
+			"checksumSHA1": "tnkdNJbJxNKuPZMWapP1xhKIIGw=",
+			"path": "github.com/opentracing/opentracing-go/log",
+			"revision": "659c90643e714681897ec2521c60567dd21da733",
+			"revisionTime": "2019-03-23T20:25:03Z"
+		},
+		{
+			"checksumSHA1": "BtK7hL0GNjhCUpNR/JD+9QY0ioo=",
+			"path": "github.com/whyrusleeping/go-logging",
+			"revision": "0457bb6b88fc1973573aaf6b5145d8d3ae972390",
+			"revisionTime": "2017-05-15T21:13:32Z"
+		},
+		{
+			"checksumSHA1": "m/RKia2Jy09JoBqzMrk1MJLzqYk=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "a129542de9ae0895210abff9c95d67a1f33cb93d",
+			"revisionTime": "2019-04-26T13:04:56Z"
+		}
+	],
+	"rootPath": "github.com/ClementTeyssa/3PJT"
+}
