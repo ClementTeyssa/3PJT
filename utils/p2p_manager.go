@@ -20,7 +20,8 @@ import (
 
 	blockchain "../blockchain"
 	defs "../defs"
-
+	
+	"github.com/phayes/freeport"
 	"github.com/davecgh/go-spew/spew"
 	golog "github.com/ipfs/go-log"
 	libp2p "github.com/libp2p/go-libp2p"
@@ -142,10 +143,7 @@ func connect2Target(newTarget string) {
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-ch
-		log.Println("Received Interrupt. Exiting now.")
-		CleanAddr()
-		cleanup(rw)
-		os.Exit(1)
+		Close(rw)
 	}()
 	//select {} // hang forever
 }
@@ -171,6 +169,12 @@ func requestPort() { // Requesting PeerPort
 	json.Unmarshal(responseData, &peerProfile.PeerPort)
 	if *defs.Port != 0 {
 		peerProfile.PeerPort = *defs.Port
+	}
+	port, err := freeport.GetFreePort()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		peerProfile.PeerPort = port
 	}
 
 	if *defs.Verbose {
@@ -211,7 +215,7 @@ func queryP2PGraph() { // Query the graph of peers in the P2P Network from the B
 func connectP2PNet() {
 	peerProfile.ThisPeer = Peer{PeerAddress: ThisPeerFullAddr}
 
-	if len(PeerGraph) == 0 { // first node in the network
+	if len(PeerGraph) == 0 && len(defs.Nodes) == 0 { // first node in the network
 		log.Println("I'm first peer. Creating Genesis Block.")
 		defs.Blockchain = append(defs.Blockchain, blockchain.GenerateGenesisBlock())
 		spew.Dump(defs.Blockchain)

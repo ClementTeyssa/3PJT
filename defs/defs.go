@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	gonet "net"
+	"strconv"
 	"sync"
 	"time"
 
@@ -12,21 +13,24 @@ import (
 )
 
 ///// FLAG & VARIABLES
+var DnPort *int
 var Port *int
 var Seed *int64
 var Secio *bool
 var Verbose *bool
 var BootstrapperAddr *string
 
-const (
-	bootstrapperPort = "51000"
-)
+// const (
+// 	bootstrapperPort = "51000"
+// )
+
+var bootstrapperPort string
 
 var Ha host.Host
 
 type Transaction struct {
-	AccountFrom string  `json:"accfrom"`
-	AccountTo   string  `json:"accto"`
+	AccountFrom string  `json:"accountfrom"`
+	AccountTo   string  `json:"accountto"`
 	Amount      float32 `json:"amount"`
 }
 
@@ -99,17 +103,20 @@ func ReadFlags() {
 	// Parse options from the command line
 	//ListenF = flag.Int("l", 0, "wait for incoming connections")
 	//Target = flag.String("d", "", "target peer to dial")
+	DnPort = flag.Int("dnp", 0, "dnode's port")
 	Port = flag.Int("p", 0, "node's port")
 	Seed = flag.Int64("seed", 0, "set random seed for id generation")
 	Secio = flag.Bool("secio", false, "enable secio")
 	Verbose = flag.Bool("verbose", false, "enable verbose")
 	BootstrapperAddr = flag.String("b", "local", "Address of bootstrapper")
 	flag.Parse()
-
+	if *DnPort != 0 {
+		bootstrapperPort = strconv.Itoa(*DnPort)
+	}
 	if *BootstrapperAddr == "local" {
 		*BootstrapperAddr = "http://localhost:" + bootstrapperPort + "/"
 	} else {
 		*BootstrapperAddr = "http://" + *BootstrapperAddr + ":" + bootstrapperPort + "/"
 	}
-	*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
+	//*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
 }

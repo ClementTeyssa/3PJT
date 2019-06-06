@@ -8,16 +8,20 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
+	"github.com/phayes/freeport"
 )
 
-const (
-	listenPort = "51000"
-)
+// const (
+// 	listenPort = "51000"
+// )
+
+var listenPort string
 
 type Node struct {
 	PhAddr string `json:"ipAdress"`
@@ -64,6 +68,12 @@ func main() {
 }
 
 func launchMUXServer() error { // launch MUX server
+	port, err := freeport.GetFreePort()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		listenPort = strconv.Itoa(port)
+	}
 	mux := makeMUXRouter()
 	log.Println("HTTP MUX server listening on " + GetMyIP() + ":" + listenPort) // listenPort is a global const
 	s := &http.Server{
@@ -182,8 +192,8 @@ func updatePeerGraph(inPeer PeerProfile) error {
 }
 
 func GetMyIP() string {
-	//var MyIP string
-	//
+	// var MyIP string
+
 	// conn, err := gonet.Dial("udp", "8.8.8.8:80")
 	// if err != nil {
 	// 	log.Fatalln(err)
@@ -204,7 +214,7 @@ func GetMyIP() string {
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Printf("My IP is:%s\n", MyIP)
+	fmt.Printf("My IP is:%s\n", MyIP)
 	return string(MyIP)
 }
 

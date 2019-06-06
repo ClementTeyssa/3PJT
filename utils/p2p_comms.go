@@ -34,11 +34,18 @@ func handleStream(s net.Stream) {
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-ch
-		close(rw)
+		Close(rw)
 	}()
 }
 
-func close(rw *bufio.ReadWriter) {
+func Close(rw *bufio.ReadWriter) {
+	var i int
+	for i = 0; i < len(defs.Nodes)-1; i++ {
+		if defs.Nodes[i].PhAddr == defs.MyNode.PhAddr {
+			break
+		}
+	}
+	defs.Nodes = append(defs.Nodes[:i], defs.Nodes[i+1:]...)
 	log.Println("Received Interrupt. Exiting now.")
 	CleanAddr()
 	cleanup(rw)

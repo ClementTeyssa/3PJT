@@ -55,6 +55,7 @@ func GenerateBlock(oldBlock defs.Block, accountFrom string, accountTo string, am
 	newBlock.Timestamp = t.String()
 
 	var transaction defs.Transaction
+	transaction.AccountFrom = accountFrom
 	transaction.AccountTo = accountTo
 	transaction.Amount = amount
 	newBlock.Transaction = transaction
