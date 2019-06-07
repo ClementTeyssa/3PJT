@@ -1,31 +1,33 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strings"
+	"syscall"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	defs "./defs"
 	utils "./utils"
 )
 
-func init() { // Idea from https://appliedgo.net/networking/
+func init() {
 	log.SetFlags(log.Lshortfile)
-	defs.ReadFlags() // in defs.go
+	defs.ReadFlags()
 }
 
 func main() {
 	var registered bool
 	registered = false
-	var email, password string
 	for !registered {
-		fmt.Printf("Email: ")
-		fmt.Scan(&email)
-		fmt.Printf("Password: ")
-		fmt.Scan(&password)
+		email, password := credentials()
 		defs.MyUser.Email = email
 		defs.MyUser.Password = password
 		jsonValue, _ := json.Marshal(defs.MyUser)
@@ -44,4 +46,20 @@ func main() {
 
 	utils.P2pInit()              // Initialize P2P Network from Bootstrapper
 	log.Fatal(utils.MuxServer()) // function is in mux.go
+}
+
+func credentials() (string, string) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Enter Username: ")
+	username, _ := reader.ReadString('\n')
+
+	fmt.Print("Enter Password: ")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err == nil {
+		fmt.Println("\nPassword typed: " + string(bytePassword))
+	}
+	password := string(bytePassword)
+
+	return strings.TrimSpace(username), strings.TrimSpace(password)
 }

@@ -7,19 +7,14 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	gonet "net"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
-	"github.com/phayes/freeport"
 )
-
-// const (
-// 	listenPort = "51000"
-// )
 
 var listenPort string
 
@@ -55,10 +50,12 @@ type PeerProfile struct { // connections of one peer
 var PeerGraph = make(map[string]PeerProfile) // Key = Node.PeerAddress; Value.Neighbors = Edges
 var graphMutex sync.RWMutex
 var verbose *bool
+var ip *string
 
 func init() {
 	log.SetFlags(log.Lshortfile)
 	verbose = flag.Bool("v", false, "enable verbose")
+	ip = flag.String("ip", "global", "ip range")
 	flag.Parse()
 	MaxPeerPort = 3499 // starting peer port
 }
@@ -68,14 +65,8 @@ func main() {
 }
 
 func launchMUXServer() error { // launch MUX server
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		listenPort = strconv.Itoa(port)
-	}
 	mux := makeMUXRouter()
-	log.Println("HTTP MUX server listening on " + GetMyIP() + ":" + listenPort) // listenPort is a global const
+	log.Println("HTTP MUX server listening on " + GetMyIP(*ip) + ":" + listenPort) // listenPort is a global const
 	s := &http.Server{
 		Addr:           ":" + listenPort,
 		Handler:        mux,
@@ -104,8 +95,8 @@ func makeMUXRouter() http.Handler { // create handlers
 func handleQuery(w http.ResponseWriter, r *http.Request) {
 	log.Println("handleQuery() API called")
 	graphMutex.RLock()
-	defer graphMutex.RUnlock()            // until the end of the handleQuery()
-	bytes, err := json.Marshal(PeerGraph) // MarshalIndent(PeerGraph, "", "  ")
+	defer graphMutex.RUnlock() // until the end of the handleQuery()
+	bytes, err := json.Marshal(PeerGraph)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -191,31 +182,32 @@ func updatePeerGraph(inPeer PeerProfile) error {
 	return nil
 }
 
-func GetMyIP() string {
-	// var MyIP string
-
-	// conn, err := gonet.Dial("udp", "8.8.8.8:80")
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// } else {
-	// 	localAddr := conn.LocalAddr().(*gonet.UDPAddr)
-	// 	MyIP = localAddr.IP.String()
-	// }
-	// return MyIP
-
-	url := "https://api.ipify.org?format=text"
-	fmt.Printf("Getting IP address from  ipify\n")
-	resp, err := http.Get(url)
-	if err != nil {
-		panic(err)
+func GetMyIP(ipRange string) string {
+	if ipRange == "local" {
+		var MyIP string
+		conn, err := gonet.Dial("udp", "8.8.8.8:80")
+		if err != nil {
+			log.Fatalln(err)
+		} else {
+			localAddr := conn.LocalAddr().(*gonet.UDPAddr)
+			MyIP = localAddr.IP.String()
+		}
+		return MyIP
+	} else {
+		url := "https://api.ipify.org?format=text"
+		fmt.Printf("Getting IP address from ipify\n")
+		resp, err := http.Get(url)
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
+		MyIP, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		return string(MyIP)
 	}
-	defer resp.Body.Close()
-	MyIP, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("My IP is:%s\n", MyIP)
-	return string(MyIP)
+
 }
 
 func handleNodeAddr(w http.ResponseWriter, r *http.Request) {

@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 
-	//gonet "net"
 	"net/http"
 	"strconv"
 	"time"
@@ -48,7 +47,7 @@ func makeMuxRouter() http.Handler {
 // web server
 func MuxServer() error {
 	mux := makeMuxRouter()
-	log.Println("HTTP Server Listening on " + GetMyIP() + ":" + strconv.Itoa(peerProfile.PeerPort)) // peerProfile.PeerPort in peer-manager.go
+	log.Println("HTTP Server Listening on " + defs.GetMyIP(*defs.Ip) + ":" + strconv.Itoa(peerProfile.PeerPort)) // peerProfile.PeerPort in peer-manager.go
 	s := &http.Server{
 		Addr:           ":" + strconv.Itoa(peerProfile.PeerPort),
 		Handler:        mux,
@@ -169,31 +168,4 @@ func respondWithJSON(writter http.ResponseWriter, request *http.Request, code in
 	}
 	writter.WriteHeader(code)
 	writter.Write(response)
-}
-
-func GetMyIP() string {
-	// var MyIP string
-
-	// conn, err := gonet.Dial("udp", "8.8.8.8:80")
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// } else {
-	// 	localAddr := conn.LocalAddr().(*gonet.UDPAddr)
-	// 	MyIP = localAddr.IP.String()
-	// }
-	// return MyIP
-
-	url := "https://api.ipify.org?format=text"
-	fmt.Printf("Getting IP address from  ipify\n")
-	resp, err := http.Get(url)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	MyIP, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	//fmt.Printf("My IP is:%s\n", MyIP)
-	return string(MyIP)
 }

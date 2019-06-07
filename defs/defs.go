@@ -2,10 +2,12 @@ package defs
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	gonet "net"
-	"strconv"
+	"net/http"
 	"sync"
 	"time"
 
@@ -13,16 +15,15 @@ import (
 )
 
 ///// FLAG & VARIABLES
-var DnPort *int
+var Ip *string
 var Port *int
 var Seed *int64
 var Secio *bool
 var Verbose *bool
-var BootstrapperAddr *string
 
-// const (
-// 	bootstrapperPort = "51000"
-// )
+const (
+	BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
+)
 
 var bootstrapperPort string
 
@@ -79,17 +80,32 @@ var Mutex = &sync.Mutex{}
 
 ////////  HELPER FUNCTIONS
 
-func GetMyIP() string {
-	var MyIP string
-
-	conn, err := gonet.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatalln(err)
+func GetMyIP(ipRange string) string {
+	if ipRange == "local" {
+		var MyIP string
+		conn, err := gonet.Dial("udp", "8.8.8.8:80")
+		if err != nil {
+			log.Fatalln(err)
+		} else {
+			localAddr := conn.LocalAddr().(*gonet.UDPAddr)
+			MyIP = localAddr.IP.String()
+		}
+		return MyIP
 	} else {
-		localAddr := conn.LocalAddr().(*gonet.UDPAddr)
-		MyIP = localAddr.IP.String()
+		url := "https://api.ipify.org?format=text"
+		fmt.Printf("Getting IP address from ipify\n")
+		resp, err := http.Get(url)
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
+		MyIP, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		return string(MyIP)
 	}
-	return MyIP
+
 }
 
 func GenRandInt(n int) int {
@@ -101,22 +117,10 @@ func GenRandInt(n int) int {
 
 func ReadFlags() {
 	// Parse options from the command line
-	//ListenF = flag.Int("l", 0, "wait for incoming connections")
-	//Target = flag.String("d", "", "target peer to dial")
-	DnPort = flag.Int("dnp", 0, "dnode's port")
+	Ip = flag.String("ip", "global", "ip address resolution")
 	Port = flag.Int("p", 0, "node's port")
 	Seed = flag.Int64("seed", 0, "set random seed for id generation")
 	Secio = flag.Bool("secio", false, "enable secio")
 	Verbose = flag.Bool("verbose", false, "enable verbose")
-	BootstrapperAddr = flag.String("b", "local", "Address of bootstrapper")
 	flag.Parse()
-	if *DnPort != 0 {
-		bootstrapperPort = strconv.Itoa(*DnPort)
-	}
-	if *BootstrapperAddr == "local" {
-		*BootstrapperAddr = "http://localhost:" + bootstrapperPort + "/"
-	} else {
-		*BootstrapperAddr = "http://" + *BootstrapperAddr + ":" + bootstrapperPort + "/"
-	}
-	//*BootstrapperAddr = "https://3pjt-dnode.infux.fr/"
 }

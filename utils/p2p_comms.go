@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -61,7 +62,7 @@ func CleanAddr() {
 		return
 	}
 
-	url := *defs.BootstrapperAddr + "remove-peer"
+	url := defs.BootstrapperAddr + "remove-peer"
 	_, err = http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
 		log.Println(err)
@@ -130,43 +131,16 @@ func writeData(rw *bufio.ReadWriter) {
 		}
 	}()
 
-	// stdReader := bufio.NewReader(os.Stdin)
+	stdReader := bufio.NewReader(os.Stdin)
 
-	// for {
-	// 	fmt.Print("> ")
-	// 	sendData, err := stdReader.ReadString('\n')
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	if strings.Contains(sendData, "Exit") {
-	// 		close(rw)
-	// 	}
-	// }
-
-	// 	sendData = strings.Replace(sendData, "\r", "", -1) + " (From terminal)"
-	// 	acc := sendData
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	newBlock := blockchain.GenerateBlock(defs.Blockchain[len(defs.Blockchain)-1], acc, "", 0)
-
-	// 	if blockchain.IsBlockValid(newBlock, defs.Blockchain[len(defs.Blockchain)-1]) {
-	// 		defs.Mutex.Lock()
-	// 		defs.Blockchain = append(defs.Blockchain, newBlock)
-	// 		defs.Mutex.Unlock()
-	// 	}
-
-	// 	bytes, err := json.Marshal(defs.Blockchain)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 	}
-
-	// 	spew.Dump(defs.Blockchain)
-
-	// 	defs.Mutex.Lock()
-	// 	rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
-	// 	rw.Flush()
-	// 	blockchain.LastSentBlockchainLen = len(defs.Blockchain)
-	// 	defs.Mutex.Unlock()
-	// }
+	for {
+		fmt.Print("> ")
+		sendData, err := stdReader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+		if strings.Contains(sendData, "Exit") {
+			Close(rw)
+		}
+	}
 }

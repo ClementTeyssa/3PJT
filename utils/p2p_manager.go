@@ -20,8 +20,7 @@ import (
 
 	blockchain "../blockchain"
 	defs "../defs"
-	
-	"github.com/phayes/freeport"
+
 	"github.com/davecgh/go-spew/spew"
 	golog "github.com/ipfs/go-log"
 	libp2p "github.com/libp2p/go-libp2p"
@@ -43,7 +42,7 @@ type PeerProfile struct { // connections of one peer
 	PeerPort  int    `json:"PeerPort"`  // port of peer
 	Neighbors []Peer `json:"Neighbors"` // edges to that node
 	Status    bool   `json:"Status"`    // Status: Alive or Dead
-	Connected bool   `json:"Connected"` // If a node is connected or not [To be used later]
+	Connected bool   `json:"Connected"` // If a node is connected or not
 }
 
 var ThisPeerFullAddr string
@@ -59,7 +58,7 @@ func P2pInit() {
 
 	requestPort() // request THIS peer's port from bootstrapper
 	if *defs.Verbose {
-		log.Println("PeerIP = ", defs.GetMyIP())
+		log.Println("PeerIP = ", defs.GetMyIP(*defs.Ip))
 	}
 	queryP2PGraph() // query graph of peers in the P2P Network
 
@@ -149,9 +148,9 @@ func connect2Target(newTarget string) {
 }
 
 func requestPort() { // Requesting PeerPort
-	log.Println("Requesting PeerPort from Bootstrapper", *defs.BootstrapperAddr)
+	log.Println("Requesting PeerPort from Bootstrapper", defs.BootstrapperAddr)
 
-	response, err := http.Get(*defs.BootstrapperAddr + "port-request")
+	response, err := http.Get(defs.BootstrapperAddr + "port-request")
 	if err != nil {
 		log.Println(err)
 		log.Fatalln("PANIC: Unable to requestPort() from bootstrapper. Bootstrapper may be down.")
@@ -170,12 +169,6 @@ func requestPort() { // Requesting PeerPort
 	if *defs.Port != 0 {
 		peerProfile.PeerPort = *defs.Port
 	}
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		peerProfile.PeerPort = port
-	}
 
 	if *defs.Verbose {
 		log.Println("PeerPort = ", peerProfile.PeerPort)
@@ -188,9 +181,9 @@ func requestPort() { // Requesting PeerPort
 }
 
 func queryP2PGraph() { // Query the graph of peers in the P2P Network from the Bootstrapper
-	log.Println("Querying graph of peers from Bootstrapper", *defs.BootstrapperAddr)
+	log.Println("Querying graph of peers from Bootstrapper", defs.BootstrapperAddr)
 
-	response, err := http.Get(*defs.BootstrapperAddr + "query-p2p-graph")
+	response, err := http.Get(defs.BootstrapperAddr + "query-p2p-graph")
 	if err != nil {
 		log.Println(err)
 		return
@@ -245,7 +238,7 @@ func connectP2PNet() {
 }
 
 func enrollP2PNet() { // Enroll to the P2P Network by adding THIS peer with Bootstrapper
-	log.Println("Enrolling in P2P network at Bootstrapper", *defs.BootstrapperAddr)
+	log.Println("Enrolling in P2P network at Bootstrapper", defs.BootstrapperAddr)
 
 	jsonValue, err := json.Marshal(peerProfile)
 	if err != nil {
@@ -253,7 +246,7 @@ func enrollP2PNet() { // Enroll to the P2P Network by adding THIS peer with Boot
 		return
 	}
 
-	url := *defs.BootstrapperAddr + "enroll-p2p-net"
+	url := defs.BootstrapperAddr + "enroll-p2p-net"
 	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
 		log.Println(err)
@@ -304,7 +297,7 @@ func makeBasicHost(listenPort int, secio bool, randseed int64) {
 	}
 
 	opts := []libp2p.Option{
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/"+defs.GetMyIP()+"/tcp/%d", listenPort)),
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/"+defs.GetMyIP("local")+"/tcp/%d", listenPort)),
 		libp2p.Identity(priv),
 	}
 
@@ -339,9 +332,7 @@ func makeBasicHost(listenPort int, secio bool, randseed int64) {
 	fullAddr := addr.Encapsulate(hostAddr)
 	log.Printf("My fullAddr = %s\n", fullAddr)
 	var re = regexp.MustCompile(`/ip4/*.*.*.*/tcp`)
-	ThisPeerFullAddr = re.ReplaceAllString(fullAddr.String(), "/ip4/"+GetMyIP()+"/tcp")
-	//ThisPeerFullAddr = fullAddr.String()
-	//return basicHost, nil
+	ThisPeerFullAddr = re.ReplaceAllString(fullAddr.String(), "/ip4/"+defs.GetMyIP(*defs.Ip)+"/tcp")
 	defs.Ha = basicHost // ha defined in defs.go
 	if *defs.Verbose {
 		log.Printf("basicHost = ", defs.Ha)
@@ -349,7 +340,7 @@ func makeBasicHost(listenPort int, secio bool, randseed int64) {
 }
 
 func sendNodeAddr() {
-	log.Println("Sending addresses to Bootstrapper", *defs.BootstrapperAddr)
+	log.Println("Sending addresses to Bootstrapper", defs.BootstrapperAddr)
 	defs.MyNode.PhAddr = peerProfile.ThisPeer.PeerAddress
 	defs.Nodes = append(defs.Nodes, defs.MyNode)
 	jsonValue, err := json.Marshal(defs.MyNode)
@@ -358,7 +349,7 @@ func sendNodeAddr() {
 		return
 	}
 
-	url := *defs.BootstrapperAddr + "node-addr"
+	url := defs.BootstrapperAddr + "node-addr"
 	response, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
 	if err != nil {
 		log.Println(err)
